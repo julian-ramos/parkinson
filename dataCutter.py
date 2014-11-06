@@ -132,13 +132,13 @@ for segInd in range(len(segments)):
             
             temp2=dtw(x,y)
             temp[sigInd][i]=temp2[0]
-#             plt.subplot(2,1,1)
-#             plt.plot(x,'b')
-#             plt.title(signals['filename'][sigInd]+'-'+dates[segInd])
-             
-#             plt.subplot(2,1,2)
-#             plt.plot(y,'r')
-#             plt.show()
+            plt.subplot(2,1,1)
+            plt.plot(x,'b')
+            plt.title(signals['filename'][sigInd]+'-'+dates[segInd])
+               
+            plt.subplot(2,1,2)
+            plt.plot(y,'r')
+            plt.show()
              
     dists=np.array(temp)
             
