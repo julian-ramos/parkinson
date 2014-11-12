@@ -1,4 +1,6 @@
+import funs as fun
 import matplotlib.pylab as plt
+import matplotlib.pyplot as pyplt
 import dataReader as dR
 from dtw import dtw
 import dataSearchUtils as dSu
@@ -8,33 +10,19 @@ import mysql.connector
 import numpy as np
 import pickle
 
-path='/home/julian/eclipseWorkspace/parkinson/sampleData/'
-listOfFiles=os.listdir(path)        
-inds=dSu.listStrFind(listOfFiles, '.csv')
-listOfFiles=[ listOfFiles[i] for i in inds]
+# path='/home/julian/eclipseWorkspace/parkinson/sampleData/'
+path='./intermediateData/'
+calculate=True
 
-signals={'data':[],'filename':[]}
 
-for filename in listOfFiles:
-    filepath='%s%s'%(path,filename)
-    signals['data'].append(dR.csvReader(filepath, ',', 0)['data'])
-    signals['filename'].append(filename)
-    for i in range(len(signals['data'][-1])):
-        temp=signals['data'][-1][i]
-        for i2 in range(4):
-            signals['data'][-1][i][i2]=float(temp[i2])
-            
-    for i in range(len(signals['data'])):
-        signals['data'][i]=np.array(signals['data'][i])
-
-if os.path.isfile(path+'segments-temp.txt'):
-    file=open(path+'segments-temp.txt','rb')
+if os.path.isfile(path+'timeElapsed.txt')and not(calculate):
+    file=open(path+'segments.txt','rb')
     segments=pickle.load(file)
     
-    file=open(path+'data-temp.txt','rb')
+    file=open(path+'data.txt','rb')
     data=pickle.load(file)
     
-    file=open(path+'timeElapsed-temp.txt','rb')
+    file=open(path+'timeElapsed.txt','rb')
     timeElapsed=pickle.load(file)
     
     file=open(path+'inds.txt','rb')
@@ -54,6 +42,13 @@ else:
      
     cursor.execute(query)
     data=[]
+    timestamp=[]
+    participant=[]
+    score=[]
+    medicated=[]
+    task=[]
+    
+    
     inds1S=[]
     inds5S=[]
     previous=-1
@@ -61,20 +56,35 @@ else:
     #Filter out data from the 24th only
     dayFilter='24'
     monthFilter='10'
-    segments=[]
-     
+    segments={'data':[],
+              'timestamp':[],
+              'participant':[],
+              'medicated':[],
+              'score':[],
+              'task':[]
+              }
+
+    
     for (data_retrieved) in cursor:
         temp=list(data_retrieved)
         day=datetime.datetime.fromtimestamp(int(temp[1])/1000.0).strftime('%d')
         month=datetime.datetime.fromtimestamp(int(temp[1])/1000.0).strftime('%m')
         if day==dayFilter and month==monthFilter:
-            data.append(temp[0:2]+temp[3:6]) 
+            data.append(temp[0:2]+temp[3:6])
+            participant.append(temp[7])
+            medicated.append(temp[8])
+            task.append(temp[9]) 
+            score.append(temp[10])
+            timestamp.append(temp[1])
+            pass
+            
+            
      
     for row in range(len(data)):
         if row>=1:
             previous=data[row-1][1]
             #Finding the gaps higher than 1 sec
-            if data[row][1]-previous > 1000:
+            if data[row][1]-previous > 2000:
                 inds1S.append(row-1)
              
                  
@@ -88,7 +98,27 @@ else:
         if ind>0:
             timeElapsed.append((data[inds1S[i]][1]-data[inds1S[i-1]+1][1])/1000.0)
             temp=np.array(data[inds1S[i-1]:inds1S[i]])
-            segments.append(temp[:,2:])
+                        
+#             plt.plot(temp[:,2])
+#             plt.plot(temp[:,3])
+#             plt.plot(temp[:,4])
+#             if filtering:
+#                 inds=fun.superFilter(temp)
+#                 if inds!=None:
+#                     temp=np.delete(temp,inds,0)
+                
+#             plt.plot(temp[:,2])
+#             plt.plot(temp[:,3])
+#             plt.plot(temp[:,4])
+#             plt.show()
+
+            
+            segments['data'].append(temp[:,2:])
+            segments['participant'].append(participant[inds1S[i-1]:inds1S[i]])
+            segments['medicated'].append(medicated[inds1S[i-1]:inds1S[i]])
+            segments['task'].append(task[inds1S[i-1]:inds1S[i]]) 
+            segments['score'].append(score[inds1S[i-1]:inds1S[i]])
+            segments['timestamp'].append(timestamp[inds1S[i-1]:inds1S[i]])
             
             end=datetime.datetime.fromtimestamp(data[inds1S[i]][1]/1000.0).strftime('%Y-%m-%d %H:%M:%S')
             start=datetime.datetime.fromtimestamp(data[inds1S[i-1]][1]/1000.0).strftime('%Y-%m-%d %H:%M:%S')
@@ -96,73 +126,40 @@ else:
             dates.append('%s-%s'%(start,end))
         else:
             timeElapsed.append((data[inds1S[i]][1]-data[0][1])/1000.0)
+            
             temp=np.array(data[0:inds1S[i]])
-            segments.append(temp[:,2:])
+#             plt.plot(temp[:,2])
+#             plt.plot(temp[:,3])
+#             plt.plot(temp[:,4])
+
+#             if filtering:
+#                 inds=fun.superFilter(temp)
+#                 if inds!=None:
+#                     temp=np.delete(temp,inds,0)
+#             plt.plot(temp[:,2])
+#             plt.plot(temp[:,3])
+#             plt.plot(temp[:,4])
+#             plt.show()
+            
+            segments['data'].append(temp[:,2:])
+            segments['participant'].append(participant[0:inds1S[i]])
+            segments['medicated'].append(medicated[0:inds1S[i]])
+            segments['task'].append(task[0:inds1S[i]]) 
+            segments['score'].append(score[0:inds1S[i]])
+            segments['timestamp'].append(timestamp[0:inds1S[i]])
             
     #Storing data from database
-#     file=open(path+'segments-temp.txt','wb')
-#     pickle.dump(segments, file)
-    file=open(path+'data-temp.txt','wb')
+    file=open(path+'segments.txt','wb')
+    pickle.dump(segments, file)
+    file=open(path+'data.txt','wb')
     pickle.dump(data,file)
-    file=open(path+'timeElapsed-temp.txt','wb')
+    file=open(path+'timeElapsed.txt','wb')
     pickle.dump(timeElapsed,file)
-    
     file=open(path+'inds.txt','wb')
     pickle.dump(inds1S,file)
-    
     file=open(path+'dates.txt','wb')
     pickle.dump(dates,file)      
-         
 
-# dynamic time warping section
-costs=[]
-for segInd in range(len(segments)):
-    temp=[[0,0,0] for ix in range(7)]
-    for sigInd in range(len(signals)):
-        for i in range(3):
-             
-            x=signals['data'][sigInd][:,i+1]
-            y=segments[segInd][:,i]
-            
-            x=np.array(x)
-            y=np.array(y)
-            
-            x=(x-np.mean(x))/np.std(x)
-            y=(y-np.mean(y))/np.std(y)
-            
-            temp2=dtw(x,y)
-            temp[sigInd][i]=temp2[0]
-            plt.subplot(2,1,1)
-            plt.plot(x,'b')
-            plt.title(signals['filename'][sigInd]+'-'+dates[segInd])
-               
-            plt.subplot(2,1,2)
-            plt.plot(y,'r')
-            plt.show()
-             
-    dists=np.array(temp)
-            
-    print(temp2[0])
-             
-    
-       
-       
-       
- 
-        
-# # plots
-# costs=[]
-# for segInd in range(len(segments)):
-#         
-#         for i in range(3):
-#             y=segments[segInd][:,i]
-#             plt.subplot(3,1,i+1)
-#             plt.plot(y)
-#             plt.title('segment'+str(segInd)+' '+dates[segInd])
-#         plt.show()
-
-
- 
 print 'done'
  
 cnx.close()
