@@ -1,0 +1,2 @@
+meanAcu,stdAcu,meanPrec0,stdPrec0,meanPrec1,stdPrec1,meanRec0,stdRec0,meanRec1,stdRec1,meanF0,stdF0,meanF1,stdF1,meanSup0,stdSup0,meanSup1,stdSup1,classifier,winLen,overLap
+0.8650,0.0470,0.9125,0.0584,0.8190,0.0502,0.8675,0.1093,0.8030,0.1759,0.8827,0.0568,0.8004,0.0999,224.8000,52.9203,136.8000,44.3143,classifier,5000,10

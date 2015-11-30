@@ -1,0 +1,39 @@
+ExperimentsLog
+1. Varying windows and overlaps
+2. Same as before but changed from milliseconds to microseconds in the
+feature extraction part
+3. Experiment 2 again but changed the order of the parameters in the
+function
+4. Experiment 3 again but changing the winLen and with one overlap only
+5. Experiment with 5 secs winLen and 10 overlap using SVM-rbf 2 deg
+6. Experiment with 5 secs winLen and 10 overlap using SVM-rbf 3 deg
+7. Same as 6 with nout 30 and maxFreq 30
+8. Same as 7 with nout 40 and maxFreq 40
+9. Same as 7 with nout 50 and maxFreq 50
+10. Same as 7 with nout 60 and maxFreq 60
+11. Same as 7 with nout 70 and maxFreq 70
+12. Same as 7 with nout 80 and maxFreq 80
+13. Same as 7 with nout 90 and maxFreq 90
+14. Same as 7 with nout 100 and maxFreq 100
+15. Same as 7 with nout 200 and maxFreq 200
+16. Same as 7 with nout 150 and maxFreq 150
+17. Same as 7 with nout 100 and maxFreq 100 and SVM with gamma 1.0
+Conclusions from all experiments up to this point:
+WinLen 5000, overlap 10, maxFreq and nout =100, default gamma value
+experiment_task3 up to task 22. Some of them had to be run with
+a smaller window due to a small number of samples available or short 
+timed task.
+Task 27 had too few examples it was only done a few times. Not
+enough for the experiments.
+Conclusions of the task experiments:
+All of the tasks have less points than features hance most of these results
+are actually unreliable. We have an under constrained system so in theory
+we have infinite solutions or none. 
+While we could reduce the number of features, that wouldn't really help
+because that would mean taking out of the system the PSD. Currently
+the number of features is equal to PSD-coeffs X statistics computed. 
+The statistics computed are 9 while PSD coeffs were varied from 20
+to 100, obtaining the best performance with 100
+I do not think going forward with regression will give us good results
+due to the same problems I mentioned above, the results are going to
+be very unreliable and unrealistic. 

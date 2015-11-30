@@ -11,11 +11,25 @@ import numpy as np
 import pickle
 
 # path='/home/julian/eclipseWorkspace/parkinson/sampleData/'
+
 path='./intermediateData/'
 calculate=True
+taskNum=False
+graph=False
+filtering=False
+
+if taskNum:
+    filename='segments_task%d.txt'%(taskNum)
+else:
+    filename='segments.txt'
+
+
+
+
 
 
 if os.path.isfile(path+'timeElapsed.txt')and not(calculate):
+    print('loading data')
     file=open(path+'segments.txt','rb')
     segments=pickle.load(file)
     
@@ -33,12 +47,23 @@ if os.path.isfile(path+'timeElapsed.txt')and not(calculate):
     
     
 else:
+    print('Retrieving data from the database')
     cnx = mysql.connector.connect(user='julian', password='julianepico',
                                   host='epiwork.hcii.cs.cmu.edu',
                                   database='upmc_parkinson')
      
     cursor = cnx.cursor()
-    query = ("SELECT * from watch_24")
+    
+
+    if taskNum:
+        # Query for different tasks
+        query = ("SELECT * from watch_24 where task=%d"%(taskNum))
+        print(query)
+        print('Executing query for task number %d'%(taskNum))
+    else:
+        # Query for on vs OFF
+        query = ("SELECT * from watch_24")
+        print('Executing query for all tasks')
      
     cursor.execute(query)
     data=[]
@@ -64,7 +89,7 @@ else:
               'task':[]
               }
 
-    
+    print('Processing data from the database')
     for (data_retrieved) in cursor:
         temp=list(data_retrieved)
         day=datetime.datetime.fromtimestamp(int(temp[1])/1000.0).strftime('%d')
@@ -97,28 +122,35 @@ else:
          
         if ind>0:
             timeElapsed.append((data[inds1S[i]][1]-data[inds1S[i-1]+1][1])/1000.0)
-            temp=np.array(data[inds1S[i-1]:inds1S[i]])
+            temp=np.array(data[inds1S[i-1]+1:inds1S[i]])
+            
+            if temp.tolist()==[]:
+                print('found empty segment - omitting')
+                continue
                         
-#             plt.plot(temp[:,2])
-#             plt.plot(temp[:,3])
-#             plt.plot(temp[:,4])
-#             if filtering:
-#                 inds=fun.superFilter(temp)
-#                 if inds!=None:
-#                     temp=np.delete(temp,inds,0)
+            if graph:
+                plt.plot(temp[:,2])
+                plt.plot(temp[:,3])
+                plt.plot(temp[:,4])
+                if filtering:
+                    inds=fun.superFilter(temp)
+                    if inds!=None:
+                        temp=np.delete(temp,inds,0)
+                     
+                plt.plot(temp[:,2])
+                plt.plot(temp[:,3])
+                plt.plot(temp[:,4])
+                plt.show()
                 
-#             plt.plot(temp[:,2])
-#             plt.plot(temp[:,3])
-#             plt.plot(temp[:,4])
-#             plt.show()
+            
 
             
             segments['data'].append(temp[:,2:])
-            segments['participant'].append(participant[inds1S[i-1]:inds1S[i]])
-            segments['medicated'].append(medicated[inds1S[i-1]:inds1S[i]])
-            segments['task'].append(task[inds1S[i-1]:inds1S[i]]) 
-            segments['score'].append(score[inds1S[i-1]:inds1S[i]])
-            segments['timestamp'].append(timestamp[inds1S[i-1]:inds1S[i]])
+            segments['participant'].append(participant[inds1S[i-1]+1:inds1S[i]])
+            segments['medicated'].append(medicated[inds1S[i-1]+1:inds1S[i]])
+            segments['task'].append(task[inds1S[i-1]+1:inds1S[i]]) 
+            segments['score'].append(score[inds1S[i-1]+1:inds1S[i]])
+            segments['timestamp'].append(timestamp[inds1S[i-1]+1:inds1S[i]])
             
             end=datetime.datetime.fromtimestamp(data[inds1S[i]][1]/1000.0).strftime('%Y-%m-%d %H:%M:%S')
             start=datetime.datetime.fromtimestamp(data[inds1S[i-1]][1]/1000.0).strftime('%Y-%m-%d %H:%M:%S')
@@ -128,18 +160,20 @@ else:
             timeElapsed.append((data[inds1S[i]][1]-data[0][1])/1000.0)
             
             temp=np.array(data[0:inds1S[i]])
-#             plt.plot(temp[:,2])
-#             plt.plot(temp[:,3])
-#             plt.plot(temp[:,4])
+            
+            if graph:
+                plt.plot(temp[:,2])
+                plt.plot(temp[:,3])
+                plt.plot(temp[:,4])
 
-#             if filtering:
-#                 inds=fun.superFilter(temp)
-#                 if inds!=None:
-#                     temp=np.delete(temp,inds,0)
-#             plt.plot(temp[:,2])
-#             plt.plot(temp[:,3])
-#             plt.plot(temp[:,4])
-#             plt.show()
+                if filtering:
+                    inds=fun.superFilter(temp)
+                    if inds!=None:
+                        temp=np.delete(temp,inds,0)
+                plt.plot(temp[:,2])
+                plt.plot(temp[:,3])
+                plt.plot(temp[:,4])
+                plt.show()
             
             segments['data'].append(temp[:,2:])
             segments['participant'].append(participant[0:inds1S[i]])
@@ -149,7 +183,8 @@ else:
             segments['timestamp'].append(timestamp[0:inds1S[i]])
             
     #Storing data from database
-    file=open(path+'segments.txt','wb')
+    print('Writing to file %s'%(filename))
+    file=open(path+filename,'wb')
     pickle.dump(segments, file)
     file=open(path+'data.txt','wb')
     pickle.dump(data,file)
